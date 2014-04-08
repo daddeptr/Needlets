@@ -248,6 +248,7 @@
             CHARACTER(LEN=80), DIMENSION(80) :: bl2_header
             CHARACTER(LEN=filenamelen) :: tempfile
             CHARACTER(LEN=3) :: iores
+            CHARACTER(LEN=2) :: io_j
 
             bl2_header = ''
             call write_minimal_header(bl2_header, 'CL', nlmax=lmax)
@@ -258,6 +259,13 @@
             CALL add_card(bl2_header, 'filecont', 'NUM js', io_nresol)
             CALL add_card(bl2_header, 'filecont', 'bl^2', 'filter functions')
 
+!## Apr 2014
+            DO j = 1, n_resol
+               write(io_j,'(1i2)') j
+!##                    print*, 'TTYPE'//TRIM(ADJUSTL(io_j))
+               CALL add_card(bl2_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'NEEDBL2_'//io_j)
+            ENDDO
+!##
  !!$            print*, bl2_header(1:5)
 
 		    if ( speak >= 1 ) then 
@@ -322,7 +330,7 @@
             if (trim(adjustl(code)) == SYNCODE) then
                do_needlets        = parse_lgt(handle, 'compute_needlets', default=.true.)
                mapfile            = parse_string(handle, 'mapfile', default='input/lcdm_map_lmax500.fits', descr='fits file containing the map to be decomposed onto needlets')
-               mapnside           = parse_int(handle, 'mapnside', default=256, descr='Nside of the input map')
+!##               mapnside           = parse_int(handle, 'mapnside', default=256, descr='Nside of the input map')
                multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=2, descr='Sets whether remove monopole/dipole (0=none, 1=Monopole, 2=monopole and dipole)', vmin=0, vmax=2)
                maskfile           = parse_string(handle, 'maskfile', default='')
                if (trim(adjustl(maskfile)) .ne. '') mask_applied = .true.
@@ -338,7 +346,7 @@
                mapnside          = parse_int(handle, 'mapnside', default=256, descr='Nside of the input needlet coefficients')
                multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=2, descr='Sets whether remove monopole/dipole (0=none, 1=Monopole, 2=monopole and dipole)', vmin=0, vmax=2)
                need_maskfile     = parse_string(handle, 'need_maskfile', default="''")
-               need_root         = parse_string(handle, 'need_root', default='!test_recmap', descr='Tag for the reconstructed map file')
+               need_root         = parse_string(handle, 'need_root', default='!test_', descr='Tag for the reconstructed map file')
             endif
 
             call parse_summarize(handle, code=code)
@@ -399,13 +407,17 @@
           subroutine synneed_sub
 
             USE head_fits, only: add_card, write_minimal_header
+            USE udgrade_nr, only: udgrade_ring
 
             IMPLICIT NONE
 
             REAL(dp), DIMENSION(:,:), ALLOCATABLE  :: mask, noise, w5map, w8r
-            REAL(sp), DIMENSION(:,:), ALLOCATABLE    :: ioneedmap
-            LOGICAL                               :: anynull = .FALSE.
-            REAL(dp)                              :: nullval = -1.63750e+30
+            REAL(sp), DIMENSION(:,:), ALLOCATABLE  :: ioneedmap
+!## Apr 2014
+            REAL(dp), DIMENSION(:), ALLOCATABLE    :: tmpmap
+!##
+            LOGICAL                                :: anynull = .FALSE.
+            REAL(dp)                               :: nullval = -1.63750e+30
 ! ----------------
 ! Variables required by map2alm
             INTEGER(i4b), PARAMETER               :: p = 1, nlheader=80
@@ -475,11 +487,12 @@
                IF (mapfile /= "''") THEN
                   IF (speak >= 1) WRITE(*,*) " ...reading input map: "//TRIM(mapfile)
                   in_npix = getsize_fits(mapfile, ordering=in_order, nside=in_nside, nmaps=nmap)
-                  if (in_nside .ne. mapnside) then
-                     print*, " WARNING - The nside found in the header does not match your entry!"
-                     print*, " The header value is assumed the correct one."
-                     mapnside = in_nside
-                  endif
+!##                  if (in_nside .ne. mapnside) then
+!##                     print*, " WARNING - The nside found in the header does not match your entry!"
+!##                     print*, " The header value is assumed the correct one."
+                  IF (speak >= 1) write(*,'(a20,i5)') " Input map Nside = ", in_nside
+                  mapnside = in_nside
+!##                  endif
                   mapnpix = in_npix
                   if (in_order .eq. 0) print*, " WARNING - ordering not found; RING assumed!"
 
@@ -511,11 +524,19 @@
                  IF (mask_applied) THEN
                     IF (speak >= 1) WRITE(*,*) " ...reading " //TRIM(maskfile)
                     in_npix = getsize_fits(maskfile, ordering=in_order, nside=in_nside, nmaps=nmap)
+                    if (in_nside .ne. mapnside) then
+                       write(*,'(a)') " ERROR - Mismatch between map and mask nside! Up/Down_grading performed to match resolutions."
+                       allocate( tmpmap(0:in_npix-1) )
+                       if (in_order == 2) call convert_nest2ring(in_nside, tmpmap )
+                       call udgrade_ring( tmpmap, in_nside, mask(:,1), mapnside )
+                       deallocate( tmpmap )
+                       where( mask(:,1) >= 0.5 ) mask(:,1) = 1.
+                       where( mask(:,1) < 0.5 ) mask(:,1) = 0.
+                    endif 
                     CALL read_bintab(maskfile, mask, mapnpix, nmap, nullval, anynull)
-                    if (in_nside .ne. mapnside) stop " ERROR - Mismatch between map and mask nside!" 
                     if (in_order .eq. 2) then
                        IF (speak >= 1) print*, " WARNING - ordering of the provided mask is NEST: converting into RING"
-                       call convert_nest2ring(mapnside,mask)
+                       call convert_nest2ring(mapnside, mask)
                     endif
                     IF (speak >= 1) print*, "read mask"
                  ENDIF
@@ -814,15 +835,18 @@
                     CALL input_map(tempfile, w8r, 2*jnside, p)
                     w8r = 1._dp + w8r
 
-                    IF (.NOT. mask_applied) CALL remove_dipole(jnside, temp_map(0:jnpix-1,1), ordering, multipole_remov_deg, multipoles_fit, zbounds)
-                    IF (mask_applied) CALL remove_dipole(jnside, temp_map(0:jnpix-1,1), ordering, multipole_remov_deg, multipoles_fit, zbounds, mask=mask(0:jnpix-1,imap-1))
+!## Apr 2014
+                    if (multipole_remov_deg > 0) then
+                       IF (.NOT. mask_applied) CALL remove_dipole(jnside, temp_map(0:jnpix-1,1), ordering, multipole_remov_deg, multipoles_fit, zbounds)
+                       IF (mask_applied) CALL remove_dipole(jnside, temp_map(0:jnpix-1,1), ordering, multipole_remov_deg, multipoles_fit, zbounds, mask=mask(0:jnpix-1,imap-1))
+                    endif
 
                     CALL map2alm_iterative(jnside, lmax, mmax, iter, temp_map(0:jnpix-1,1:p), temp_alm, w8ring=w8r)
                     deallocate(w8r)
-!!$                    DO l = 0, lmax
+                    DO l = 0, lmax
 ! TEST
 ! --- keeping monopole and dipole
-                    DO l = 2, lmax
+!##                    DO l = 2, lmax
 ! ---
 !!$                       alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) * sqrt(bl2(imap+1,l)) / need_norm
                        alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) * sqrt(bl2(imap+1,l)) / need_norm !/ pwf(l,1)
