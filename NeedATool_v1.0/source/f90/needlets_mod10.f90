@@ -262,7 +262,6 @@
 !## Apr 2014
             DO j = 1, n_resol
                write(io_j,'(1i2)') j
-!##                    print*, 'TTYPE'//TRIM(ADJUSTL(io_j))
                CALL add_card(bl2_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'NEEDBL2_'//io_j)
             ENDDO
 !##
@@ -319,15 +318,17 @@
             handle = parse_init(paramfile)
 
             speak             = parse_int(handle, 'feedback', default=1, descr='Amount of comments printed by the code')
-            healpix_dir       = parse_string(handle, 'healpix_dir', default='/Users/dpietrob/work/cmbcodes/Healpix_2.13a', descr='Healpix package path')
-            lmax              = parse_int(handle, 'l_max', default=500, descr='Maximum ell at which the analysis is carried out')
-            B                 = parse_double(handle, 'B', default=2._dp, descr='Filter range parameter')
-!!$            deltaj            = parse_double(handle, 'delta_j', default=1._dp)
-!!$            write(io_dj,'(1f5.2)') deltaj
-            nside_boost       = parse_int(handle, 'nside_boost', default=2, descr='Sets Nside of the needlet coefficient map (lmax < nside_boost*nside)', vmin=1, vmax=4)
-!!$            need_resol_scheme = parse_string(handle, 'need_resol_scheme', default='constant_nside')
+			healpix_dir       = get_healpix_main_dir()
+            healpix_dir       = parse_string(handle, 'healpix_dir', default=TRIM(ADJUSTL(healpix_dir)), descr='Healpix package path')
 ! --- synneed parameters
             if (trim(adjustl(code)) == SYNCODE) then
+               lmax              = parse_int(handle, 'l_max', default=500, descr='Maximum ell at which the analysis is carried out')
+               B                 = parse_double(handle, 'B', default=2._dp, descr='Filter range parameter')
+!!$            deltaj            = parse_double(handle, 'delta_j', default=1._dp)
+!!$            write(io_dj,'(1f5.2)') deltaj
+               nside_boost       = parse_int(handle, 'nside_boost', default=2, descr='Sets Nside of the needlet coefficient map (lmax < nside_boost*nside)', vmin=1, vmax=4)
+!## Needlets parameters necessary to build Bl2. Ananeed will read these parameters from the header.
+!!$            need_resol_scheme = parse_string(handle, 'need_resol_scheme', default='constant_nside')
                do_needlets        = parse_lgt(handle, 'compute_needlets', default=.true.)
                mapfile            = parse_string(handle, 'mapfile', default='input/lcdm_map_lmax500.fits', descr='fits file containing the map to be decomposed onto needlets')
 !##               mapnside           = parse_int(handle, 'mapnside', default=256, descr='Nside of the input map')
@@ -343,7 +344,7 @@
 ! --- ananeed parameters
             if (trim(adjustl(code)) == ANACODE) then
                mapfile           = parse_string(handle, 'mapfile', default='test_needlet_coefficients_2.00_Nj009.fits', descr='fits file containing needlet coefficients')
-               mapnside          = parse_int(handle, 'mapnside', default=256, descr='Nside of the input needlet coefficients')
+!## Apr 2014               mapnside          = parse_int(handle, 'mapnside', default=256, descr='Nside of the input needlet coefficients')
                multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=2, descr='Sets whether remove monopole/dipole (0=none, 1=Monopole, 2=monopole and dipole)', vmin=0, vmax=2)
                need_maskfile     = parse_string(handle, 'need_maskfile', default="''")
                need_root         = parse_string(handle, 'need_root', default='!test_', descr='Tag for the reconstructed map file')
@@ -464,7 +465,7 @@
 
             CALL CPU_TIME(t1)
 
-            WRITE(*,*) " ...computing needlets coefficients:"
+            IF (speak >= 0) WRITE(*,*) " ...computing needlets coefficients:"
 
             CALL set_needlet_environment( speak )
 
@@ -708,8 +709,10 @@
 
               iter = 2 ! number of iteration for map2alm_iterative
 
-              WRITE(*,*) " ...computing bl2:"
-
+              IF (speak >= 0 ) WRITE(*,*) " ...computing bl2:"
+!## Apr 2014
+!## Reading parameters from file header.
+!##
               CALL set_needlet_environment( speak)
              
               mmax = lmax
