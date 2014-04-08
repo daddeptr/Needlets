@@ -1,18 +1,14 @@
-#Healpix_LIB = /usr/local/myprog/Healpix_2.11/lib_ifort
 Healpix_LIB = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/lib_gfortran
 
-#INCLUDE = /usr/local/myprog/Healpix_2.11/include_ifort
 INCLUDE = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/include_gfortran
 
-#CFITSIO = /usr/lib
-CFITSIO = /Users/dpietrob/work/cmbcodes/mylib/cfitsio
+CFITSIO = /usr/local/lib
 
-F90C    = gfortran #ifort
-FFLAGS  = -O -DGFORTRAN -fno-second-underscore -m64 -fopenmp -ffree-line-length-none $(CHECKFLAGS) #-finit-real=nan, -finit-init=xxx, -finit-logical=xxx 
+F90C    = gfortran
+FFLAGS  = -O -DGFORTRAN -fno-second-underscore -m64 -fopenmp -ffree-line-length-none #$(CHECKFLAGS)
 CHECKFLAGS = -fbounds-check -g -fbacktrace
 
-#LIBRARIES = -L$(CFITSIO) -lcfitsio -L$(Healpix_LIB) -lhealpix -lg2c
-LIBRARIES = -L$(Healpix_LIB) -L$(CFITSIO) -lhealpix -lgif -lcfitsio -framework veclib
+LIBRARIES = -L$(Healpix_LIB) -L$(CFITSIO) -lhealpix -lcfitsio -framework veclib
 
 LAPACKL =
 
