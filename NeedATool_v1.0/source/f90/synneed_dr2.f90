@@ -71,9 +71,9 @@
 !        n_args = nArguments()
 
         WRITE(*,*) " "
-        WRITE(*,*) "  *****************************"
+        WRITE(*,*) "  ***********************************"
         WRITE(*,*) "   Welcome to "//TRIM(SYNCODE)//" "//TRIM(MYVERSION)
-        WRITE(*,*) "  *****************************"
+        WRITE(*,*) "  ***********************************"
         WRITE(*,*) " "
 
         lcode = SYNCODE

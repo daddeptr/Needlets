@@ -75,7 +75,7 @@
 
           CHARACTER(LEN=10), PARAMETER               :: SYNCODE = "SYNNEED"
           CHARACTER(LEN=10), PARAMETER               :: ANACODE = "ANANEED"
-          CHARACTER(LEN=10), PARAMETER               :: MYVERSION = "1.0 - Jun 2010"
+          CHARACTER(LEN=15), PARAMETER               :: MYVERSION = "1.0 - Jun 2010"
           INTEGER(i4b)                               :: nside, npix, mapnside, mapnpix, nside_boost=2, in_order
           INTEGER(i4b), PARAMETER                    :: i_lw=1, i_ave=2, i_up=3, i_dl=4, i_dof=5, i_ns=6 
           INTEGER(i4b), DIMENSION(:,:), ALLOCATABLE  :: dof

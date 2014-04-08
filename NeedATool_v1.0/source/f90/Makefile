@@ -1,22 +1,30 @@
-Healpix_LIB = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/lib_gfortran
+Healpix_LIB = /global/scratch2/sd/dpietrob/Software/Healpix_3.00/lib_ifort
+### Healpix_LIB = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/lib_gfortran
 
-Healpix_INCLUDE = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/include_gfortran
+Healpix_INCLUDE = /global/scratch2/sd/dpietrob/Software/Healpix_3.00/include_ifort
+###Healpix_INCLUDE = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/include_gfortran
 
-CFITSIO = /usr/local/lib
+CFITSIO = /global/scratch2/sd/dpietrob/Software/cfitsio_ifort
+###CFITSIO = /usr/local/lib
 
-F90C    = gfortran
-FFLAGS  = -O -DGFORTRAN -fno-second-underscore -m64 -fopenmp -ffree-line-length-none #$(CHECKFLAGS)
-CHECKFLAGS = -fbounds-check -g -fbacktrace
+F90C    = ifort
+FFLAGS  = -mkl -openmp -O4 -xHost -no-prec-div -fpp -DMPI -CB #$(CHECKFLAGS)
+CHECKFLAGS = -g -traceback
 
-LIBRARIES = -L$(Healpix_LIB) -L$(CFITSIO) -lhealpix -lcfitsio -framework veclib
+# gfortran
+###F90C    = gfortran
+###FFLAGS  = -O3 -DGFORTRAN -fno-second-underscore -m64 -fopenmp -ffree-line-length-none #$(CHECKFLAGS)
+###CHECKFLAGS = -fbounds-check -g -fbacktrace
+
+LIBRARIES = -L$(Healpix_LIB) -L$(CFITSIO) -lhealpix -lcfitsio
 
 LAPACKL =
 
-SNAME = ../synneed
+SNAME = ../synneed.ifort
 
-ANAME = ../ananeed
+ANAME = ../ananeed.ifort
 
-F90FLAGS = -O3 -I$(Healpix_INCLUDE) $(FFLAGS) 
+F90FLAGS = -I$(Healpix_INCLUDE) $(FFLAGS) 
 
 SOBJFILES = needlets_mod10.o  synneed_dr2.o
 

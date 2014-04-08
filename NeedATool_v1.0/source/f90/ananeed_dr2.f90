@@ -70,9 +70,9 @@
 !        n_args = nArguments()
 
         WRITE(*,*) " "
-        WRITE(*,*) "  ******************************"
+        WRITE(*,*) "  ***********************************"
         WRITE(*,*) "   Welcome to "//TRIM(ANACODE)//" "//TRIM(MYVERSION)
-        WRITE(*,*) "  ******************************"
+        WRITE(*,*) "  ***********************************"
         WRITE(*,*) " "
 
         lcode = ANACODE
