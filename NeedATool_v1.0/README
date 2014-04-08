@@ -1,0 +1,45 @@
+
+    ___________________________________________________________________
+   |                                                                   |
+   |                         NeedATool - Version 1.0                   |
+   |                                 Jan 2010                          |
+   |                                                                   |
+   |                                    by                             | 
+   |  Davide Pietrobon, Amedeo Balbi, Paolo Cabella, Krzysztof Gorski  |
+   |___________________________________________________________________|
+
+
+
+NeedATool, is a software which encodes spherical needlets decomposition
+of an input scalar field defined on the sphere.
+For a detail discassion on how needlets perform, please, refer to 
+
+"NeedATool: a Needlet Analysis Tool for cosmological data processing"
+Pietrobon et al.
+
+------  ------
+
+Edit the Makefile in the source folder specifying the path for the 
+Healpix library and the Fortran90 compiler as well the compiling flags.
+Two examples are given.
+
+When compiled two pieces of code are built: synneed, which computes needlets
+fileters in harmonics space, necessary to compute needlets coefficients,
+and the coefficients of a given map. The map has to be in Healpix
+RING format.
+Healpix can be downloaded from:
+http://healpix.jpl.nasa.gov/healpixSoftwareGetHealpix.shtml
+ 
+The second code is ananeed, which reconstructs a map, given the needlets
+coefficients, previously computed with synneed.
+
+Both pieces of code can be run in the interactive mode or providing a 
+parsing file. An examples of parsing file s given. Please, modify it 
+for your purpose.
+
+Be aware that the code was written for research purpose.
+Please, report any bug to:
+
+davide.pietrobon@berkeley.edu
+
+Enjoy it!
