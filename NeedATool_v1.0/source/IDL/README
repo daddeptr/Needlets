@@ -1,0 +1,23 @@
+
+    ___________________________________________________________________
+   |                                                                   |
+   |                         NeedATool - Version 1.0                   |
+   |                                 Jan 2010                          |
+   |                                                                   |
+   |                                    by                             | 
+   |  Davide Pietrobon, Amedeo Balbi, Paolo Cabella, Krzysztof Gorski  |
+   |___________________________________________________________________|
+
+
+
+NeedATool, is a software which encodes spherical needlets decomposition
+of an input scalar field defined on the sphere.
+For a detail discassion on how needlets perform, please, refer to 
+
+"NeedATool: a Needlet Analysis Tool for cosmological data processing"
+Pietrobon et al.
+
+------  ------
+
+The IDL library is in progress. Please, check the the repository in little while.
+Thank you.
