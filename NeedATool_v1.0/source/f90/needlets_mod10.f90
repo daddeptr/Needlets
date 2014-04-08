@@ -75,8 +75,8 @@
 
           CHARACTER(LEN=10), PARAMETER               :: SYNCODE = "SYNNEED"
           CHARACTER(LEN=10), PARAMETER               :: ANACODE = "ANANEED"
-          CHARACTER(LEN=15), PARAMETER               :: MYVERSION = "1.0 - Jun 2010"
-          INTEGER(i4b)                               :: nside, npix, mapnside, mapnpix, nside_boost=2, in_order
+          CHARACTER(LEN=15), PARAMETER               :: MYVERSION = "1.1 - Apr 2014"
+          INTEGER(i4b)                               :: nside, npix, mapnside, mapnpix, nside_boost=2, in_order, multipole_remov_deg
           INTEGER(i4b), PARAMETER                    :: i_lw=1, i_ave=2, i_up=3, i_dl=4, i_dof=5, i_ns=6 
           INTEGER(i4b), DIMENSION(:,:), ALLOCATABLE  :: dof
           REAL(dp)                                   :: need_norm
@@ -86,6 +86,7 @@
 
           REAL(dp), ALLOCATABLE, DIMENSION(:)    :: masked_map, lst_l
           
+          INTEGER(i4b) :: speak = 1
           LOGICAL :: mask_applied = .FALSE.
           LOGICAL :: beam_applied = .FALSE.
           LOGICAL :: do_needlets  = .TRUE.
@@ -135,9 +136,10 @@
 
             character(len=10) :: code
             
-            logical, optional, intent(inout) :: voice
-
-           if ( .not. present(voice) ) voice = .true.
+!## Apr 2014           logical, optional, intent(inout) :: voice
+!##           if ( .not. present(voice) ) voice = .true.
+            integer(i4b), optional, intent(inout) :: voice
+            if ( .not. present(voice) ) voice = 1
 
             oneob = 1./B
             write(io_B,'(f4.2)') B
@@ -148,7 +150,7 @@
 ! ---
             jmax = 1 + INT( LOG( REAL(lmax) ) / LOG(B) / deltaj )
             n_resol = jmax
-            WRITE(*,*) " n_resol = ", n_resol
+            if (speak >= 1) WRITE(*,*) " n_resol = ", n_resol
             WRITE(io_nresol,"(i3.3)") n_resol
 
             ALLOCATE( bl2(n_resol, 0:lmax) )
@@ -160,7 +162,7 @@
 
             CALL bj_of_l
 
-            if (voice) CALL which_l
+            CALL which_l
 
             CALL get_dof(voice)
 
@@ -176,8 +178,6 @@
 
             return
 
-
-
           end subroutine set_needlet_environment
 
 ! **********************************************************************
@@ -188,14 +188,21 @@
 
             integer(i4b) :: lw, up, ave, dl, d, ns, hns, j, i
 
-            logical, optional, intent(inout) :: voice
+!##            logical, optional, intent(inout) :: voice
+            integer(i4b), optional, intent(inout) :: voice
 
-            print*, " ***************************"
-            print*, " *    Subroutine get_dof   *"
-            print*, " ***************************"
+!##            print*, " ***************************"
+!##            print*, " *    Subroutine get_dof   *"
+!##            print*, " ***************************"
 
 
-            if (.not. present(voice) ) voice = .true.
+!##            if (.not. present(voice) ) voice = .true.
+            if (.not. present(voice) ) voice = 1
+            if (voice >= 1) then 
+               print*, " ***************************"
+               print*, " *    Subroutine get_dof   *"
+               print*, " ***************************"
+        	endif
 
             do j=1,jmax
                lw = int( B**(j-1) )
@@ -212,12 +219,12 @@
                if (j .eq. jmax) dof(j,i_ns) = dof(j-1,i_ns)
             enddo
 
-            if (voice) then
+            if (voice >= 1) then
                print*, " Computation of actual d.o.f. for each j:"
                print*, ""
                write(*,'(7a15)'), "j", "lw", "ave", "up", "dl", "dof", "hns"
                print*, ""
-               do j=1,jmax
+   	           do j=1,jmax
                   write(*,'(7i15)'), j, dof(j,:)
                enddo
             endif
@@ -253,12 +260,14 @@
 
  !!$            print*, bl2_header(1:5)
 
-            print*, " ***************************"
-            print*, " *   Subroutine write_bl2  *"
-            print*, " ***************************"
+		    if ( speak >= 1 ) then 
+               print*, " ***************************"
+               print*, " *   Subroutine write_bl2  *"
+               print*, " ***************************"
+            endif
 
             tempfile = TRIM(in_root)//'_B'//TRIM(io_B)//'_Nj'//TRIM(io_nresol)//'.fits'
-            print*, ' ...writing on file_root: ', TRIM(tempfile)
+            if ( speak >= 1 ) print*, ' ...writing on file_root: ', TRIM(tempfile)
 
             call write_asctab(transpose(bl2), lmax, n_resol, bl2_header, 80, tempfile)   
 
@@ -301,6 +310,7 @@
 
             handle = parse_init(paramfile)
 
+            speak             = parse_int(handle, 'feedback', default=1, descr='Amount of comments printed by the code')
             healpix_dir       = parse_string(handle, 'healpix_dir', default='/Users/dpietrob/work/cmbcodes/Healpix_2.13a', descr='Healpix package path')
             lmax              = parse_int(handle, 'l_max', default=500, descr='Maximum ell at which the analysis is carried out')
             B                 = parse_double(handle, 'B', default=2._dp, descr='Filter range parameter')
@@ -310,21 +320,23 @@
 !!$            need_resol_scheme = parse_string(handle, 'need_resol_scheme', default='constant_nside')
 ! --- synneed parameters
             if (trim(adjustl(code)) == SYNCODE) then
-               do_needlets       = parse_lgt(handle, 'compute_needlets', default=.true.)
-               mapfile           = parse_string(handle, 'mapfile', default='input/lcdm_map_lmax500.fits', descr='fits file containing the map to be decomposed onto needlets')
-               mapnside          = parse_int(handle, 'mapnside', default=256, descr='Nside of the input map')
-               maskfile          = parse_string(handle, 'maskfile', default='')
+               do_needlets        = parse_lgt(handle, 'compute_needlets', default=.true.)
+               mapfile            = parse_string(handle, 'mapfile', default='input/lcdm_map_lmax500.fits', descr='fits file containing the map to be decomposed onto needlets')
+               mapnside           = parse_int(handle, 'mapnside', default=256, descr='Nside of the input map')
+               multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=2, descr='Sets whether remove monopole/dipole (0=none, 1=Monopole, 2=monopole and dipole)', vmin=0, vmax=2)
+               maskfile           = parse_string(handle, 'maskfile', default='')
                if (trim(adjustl(maskfile)) .ne. '') mask_applied = .true.
-               beamfile          = parse_string(handle, 'beamfile', default='')
+               beamfile           = parse_string(handle, 'beamfile', default='')
                if (trim(adjustl(beamfile)) .ne. '') beam_applied = .true.
-               bl2_root          = parse_string(handle, 'bl2_root', default='!test_bl2', descr='Tag for the bl2 filter files')
-               need_root         = parse_string(handle, 'need_root', default='!test_needlet_coefficients', descr='Tag for the needlet coefficient file')
+               bl2_root           = parse_string(handle, 'bl2_root', default='!test_bl2', descr='Tag for the bl2 filter files')
+               need_root          = parse_string(handle, 'need_root', default='!test_needlet_coefficients', descr='Tag for the needlet coefficient file')
             endif
 
 ! --- ananeed parameters
             if (trim(adjustl(code)) == ANACODE) then
                mapfile           = parse_string(handle, 'mapfile', default='test_needlet_coefficients_2.00_Nj009.fits', descr='fits file containing needlet coefficients')
                mapnside          = parse_int(handle, 'mapnside', default=256, descr='Nside of the input needlet coefficients')
+               multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=2, descr='Sets whether remove monopole/dipole (0=none, 1=Monopole, 2=monopole and dipole)', vmin=0, vmax=2)
                need_maskfile     = parse_string(handle, 'need_maskfile', default="''")
                need_root         = parse_string(handle, 'need_root', default='!test_recmap', descr='Tag for the reconstructed map file')
             endif
@@ -350,16 +362,23 @@
 
             INTEGER(i4b) :: i
             
-            LOGICAL, OPTIONAL :: voice
+!##            LOGICAL, OPTIONAL :: voice
+            INTEGER(i4b), OPTIONAL :: voice
 
-            print*, " ***************************"
-            print*, " *   Subroutine set_nside  *"
-            print*, " ***************************"
+!##            print*, " ***************************"
+!##            print*, " *   Subroutine set_nside  *"
+!##            print*, " ***************************"
 
 
-            if ( .not. present(voice) ) voice= .true.
+!##            if ( .not. present(voice) ) voice= .true.
+            if ( .not. present(voice) ) voice= 1
+            if (voice >= 1) then 
+               print*, " ***************************"
+               print*, " *   Subroutine set_nside  *"
+               print*, " ***************************"
+            endif
 
-            if (voice) WRITE(*,*) " Setting nside: mode '", trim(adjustl(need_resol_scheme)), "'"
+            if (voice >= 1) WRITE(*,*) " Setting nside: mode '", trim(adjustl(need_resol_scheme)), "'"
 
             i = 0
 
@@ -369,7 +388,7 @@
 
             set_nside = 2**i
 
-            if (voice) WRITE(*,'(A14,I8)') " nside     = ", set_nside
+            if (voice >= 1) WRITE(*,'(A14,I8)') " nside     = ", set_nside
 
             RETURN
 
@@ -412,7 +431,7 @@
 ! ----------------
 ! Variables necessary to call "udgrade_ring"
 !              REAL(sp), PARAMETER :: bad_data = 0.
-              LOGICAL :: speak = .true.
+!## Apr 2014              LOGICAL :: speak = .true.
 ! ----------------        
 !              REAL(sp), ALLOCATABLE, DIMENSION(:,:) :: sim_need!, sim_need2
 !              REAL(sp), ALLOCATABLE, DIMENSION(:,:) :: tot_need, tot_need2, var
@@ -447,14 +466,14 @@
                ALLOCATE(alm(1:p,0:lmax,0:mmax))
 
                ordering = 1 ! 1:RING, 2:NEST
-               multipole_remov_deg = 2 ! 0:none, 1:monopole, 2:monopole and dipole
+!## Apr 2014               multipole_remov_deg = 2 ! 0:none, 1:monopole, 2:monopole and dipole
                allocate( multipoles_fit(0:multipole_remov_deg*multipole_remov_deg-1) )
                multipoles_fit = 0.
                zbounds = 0.
 
 ! ------ Reading map
                IF (mapfile /= "''") THEN
-                  WRITE(*,*) " ...reading input map: "//TRIM(mapfile)
+                  IF (speak >= 1) WRITE(*,*) " ...reading input map: "//TRIM(mapfile)
                   in_npix = getsize_fits(mapfile, ordering=in_order, nside=in_nside, nmaps=nmap)
                   if (in_nside .ne. mapnside) then
                      print*, " WARNING - The nside found in the header does not match your entry!"
@@ -464,14 +483,15 @@
                   mapnpix = in_npix
                   if (in_order .eq. 0) print*, " WARNING - ordering not found; RING assumed!"
 
-                  WRITE(*,*) "    map nside: ", mapnside
-                  WRITE(*,*) "    map npix:  ", mapnpix
-                  WRITE(*,*) "    ordering:  ", in_order
-                  WRITE(*,*) "    map nmap:  ", nmap
-                  print*, ""
-                  WRITE(*,*) "    mask:      ", mask_applied
-                  WRITE(*,*) "    beam:      ", beam_applied
-
+				  IF (speak >= 1) THEN 
+                     WRITE(*,*) "    map nside: ", mapnside
+                     WRITE(*,*) "    map npix:  ", mapnpix
+                     WRITE(*,*) "    ordering:  ", in_order
+                     WRITE(*,*) "    map nmap:  ", nmap
+                     print*, ""
+                     WRITE(*,*) "    mask:      ", mask_applied
+                     WRITE(*,*) "    beam:      ", beam_applied
+                  endif
                   allocate( w5map(0:mapnpix-1,1:nmap) )
                   w5map = 0._dp
 !               allocate( noise(0:mapnpix-1,1:nmap) )
@@ -479,9 +499,9 @@
                   mask = 0._dp
                   CALL read_bintab(mapfile, w5map, mapnpix, nmap, nullval, anynull)
                   if (in_order .eq. 2) then
-                     print*, " Input map in nest order: reordering..."
+                     IF (speak >= 1) print*, " Input map in nest order: reordering..."
                      call convert_nest2ring(mapnside, w5map)
-                     print*," Map converted to RING order."
+                     IF (speak >= 1) print*," Map converted to RING order."
                   endif
                ENDIF
 
@@ -489,31 +509,32 @@
 !                 print*, " w5map size: ",size(mask)
                  mask = 1._dp
                  IF (mask_applied) THEN
-                    WRITE(*,*) " ...reading " //TRIM(maskfile)
+                    IF (speak >= 1) WRITE(*,*) " ...reading " //TRIM(maskfile)
                     in_npix = getsize_fits(maskfile, ordering=in_order, nside=in_nside, nmaps=nmap)
                     CALL read_bintab(maskfile, mask, mapnpix, nmap, nullval, anynull)
                     if (in_nside .ne. mapnside) stop " ERROR - Mismatch between map and mask nside!" 
                     if (in_order .eq. 2) then
-                       print*, " WARNING - ordering of the provided mask is NEST: converting into RING"
+                       IF (speak >= 1) print*, " WARNING - ordering of the provided mask is NEST: converting into RING"
                        call convert_nest2ring(mapnside,mask)
                     endif
-                    print*, "read mask"
+                    IF (speak >= 1) print*, "read mask"
                  ENDIF
 ! TEST
 ! --- removing residual monopole and dipole from all needlets
-                 CALL remove_dipole(mapnside, w5map(:,1), ordering, multipole_remov_deg, multipoles_fit, zbounds, mask=mask(:,1))
+                 if (multipole_remov_deg > 0) CALL remove_dipole(mapnside, w5map(:,1), ordering, &
+                    & multipole_remov_deg, multipoles_fit, zbounds, mask=mask(:,1))
 
 ! ------ Extracting alms
 ! including possibility to choose all anafast parameters
 
-                 WRITE(*,*) " ...extracting alm from masked map:"
+                 IF (speak >= 1) WRITE(*,*) " ...extracting alm from masked map:"
 
 ! ------ Correcting for the w8ring
                  WRITE(io_nside,'(1i4.4)') mapnside
                  allocate( w8r(1:nside_boost*mapnside,1:p) )
                  w8r = 0.
                  tempfile = TRIM(adjustl(healpix_dir))//"/data/weight_ring_n0"//io_nside//".fits"
-                 print*, " Reading w8r correction..."
+                 IF (speak >= 1) print*, " Reading w8r correction..."
                  CALL input_map(tempfile, w8r, 2*mapnside, p)
 
 !                 print*, " !!! WARNING - w8r removed in synneed !!!"
@@ -537,7 +558,7 @@
 ! --- beam reading
                  if (beam_applied) then 
                     tempfile = TRIM(beamfile)
-                    print*, " Reading beam_file..."
+                    IF (speak >= 1) print*, " Reading beam_file..."
                     pwf = 1.
                     CALL fits2cl(tempfile,pwf,lmax,p,cl_header)
                     DO l = 0, lmax 
@@ -546,16 +567,16 @@
                  endif
 
 ! ------ Building needlets
-                 WRITE(*,*) " ...building needlets:"
-                 WRITE(*,*) "    needlets nside: ", nside
-                 WRITE(*,*) "    needlets npix:  ", npix
+                 IF (speak >= 1) WRITE(*,*) " ...building needlets:"
+                 IF (speak >= 2) WRITE(*,*) "    needlets nside: ", nside
+                 IF (speak >= 2) WRITE(*,*) "    needlets npix:  ", npix
 
                  ALLOCATE(need_map(0:npix-1,0:n_resol-1))
                  need_map = hpx_sbadval
                  ALLOCATE(need_mask(0:npix-1,0:n_resol-1))
                  need_mask = hpx_sbadval
 
-                 WRITE(*,*) " ...building needlets and masks for each resolution:"
+                 IF (speak >= 1) WRITE(*,*) " ...building needlets and masks for each resolution:"
                  DO i_resol=0,n_resol-1
 
                     IF ( jflag(i_resol+1) ) then
@@ -583,7 +604,7 @@
  ! ------ masking needlets
  !!$                 WRITE(*,*) " ...masking needlets:"
  !!$                 need_map = need_map * need_mask / need_norm
-                 print*, " Normalization included in the needlet construction"
+                 IF (speak >= 1) print*, " Normalization included in the needlet construction"
  !!$                 print*, " normalization: ", need_norm
  !!$                 need_map = need_map * need_norm
 
@@ -603,6 +624,10 @@
                     write(io_hns,'(1i4.4)') dof(j,i_ns)
 !                    print*, io_j
                     CALL add_card(need_header,  'filecont', 'ns '//io_j, io_hns)
+!## Apr 2014. Specifying the TTYPE for each needlets coefficients to solve fits reading clash 
+                    write(io_j,'(1i2)') j
+!##                    print*, 'TTYPE'//TRIM(ADJUSTL(io_j))
+                    CALL add_card(need_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'T_NEED_C'//io_j)
                  enddo
 
                  tempfile = TRIM(need_root)//'_'//TRIM(io_B)//'_Nj'//TRIM(io_nresol)//'.fits'
@@ -637,7 +662,8 @@
 
               CHARACTER(LEN=filenamelen)                 :: tempfile
 !!$              REAL(sp), DIMENSION(:), ALLOCATABLE        :: temp_mask!temp_map, 
-              INTEGER(i4b)                               :: imap, mmax, l, nl, nm, iter, ordering, multipole_remov_deg, nmap, jnside, jnpix
+!##              INTEGER(i4b)                               :: imap, mmax, l, nl, nm, iter, ordering, multipole_remov_deg, nmap, jnside, jnpix
+              INTEGER(i4b)                               :: imap, mmax, l, nl, nm, iter, ordering, nmap, jnside, jnpix
               INTEGER(i4b), PARAMETER                    :: p = 1!, nlheader=80
               integer(i8b) :: in_npix
 
@@ -655,7 +681,7 @@
 
               CHARACTER(LEN=80), DIMENSION(120)          :: need_header
 
-              logical :: speak = .true.
+!## Apr 2014              logical :: speak = .true.
 
               CALL CPU_TIME(t1)
 
@@ -757,7 +783,7 @@
 !!$!              print*, w8r(1:10,1)
 
               ordering = 1 ! 1:RING, 2:NEST
-              multipole_remov_deg = 2 ! 0:none, 1:monopole, 2:monopole and dipole
+!## Apr 2014              multipole_remov_deg = 2 ! 0:none, 1:monopole, 2:monopole and dipole
               allocate( multipoles_fit(0:multipole_remov_deg*multipole_remov_deg-1) )
               multipoles_fit = 0.
               zbounds = 0.
@@ -855,17 +881,18 @@
             real(dp) :: cen_x, low_x, high_x, top_hat, top_hat_c, top_hat_r
             integer(i4b) :: choice, bin_mode
 
-
-            print*, " ***************************"
-            print*, " *    Subroutine bj_of_l   *"
-            print*, " ***************************"
-
+            if (speak >= 1) then 
+               print*, " ***************************"
+               print*, " *    Subroutine bj_of_l   *"
+               print*, " ***************************"
+            endif
+ 
             choice   = 1
             bin_mode = 1
  
             CALL intg(oneob,B,area,bsqr,1.d-5)
 
-            write(*,'(1a27,1f15.6)') "  - bsqr has area equal to:", area
+            if (speak >= 1) write(*,'(1a27,1f15.6)') "  - bsqr has area equal to:", area
             top_hat_r = area
 
             cen_x = ( B + oneob ) / 2.d0
@@ -888,8 +915,8 @@
             enddo
 
 !!$ test
-            print*, ""
-            write(*,'(a22,f9.2)') " CHECK: sum of bl2: ", sum(bl2)
+            if (speak >= 1) print*, ""
+            if (speak >= 1) write(*,'(a22,f9.2)') " CHECK: sum of bl2: ", sum(bl2)
             IF ( (sum(bl2) - lmax-2+1.) .GT. 1.e-4) then 
                print*, " WARNING - If not equal to the sum ell=2,...,lmax you re missing power at low ell; the reconstruction may fail"
 !               pause
@@ -920,7 +947,7 @@
           DO l = 0, lmax
              lrange(l) = l
           ENDDO
-          WRITE(*,*) " l-range per each j:"
+          if (speak >= 1) WRITE(*,*) " l-range per each j:"
 
           DO j = 1, n_resol
              IF (B**(j+1) .LT. 2.) THEN
@@ -944,7 +971,7 @@
                 ENDDO
              ENDIF
              IF (SUM(lr(j,:)) .GT. 0.) jflag(j) = .TRUE.
-             WRITE(*,*) " j = ", j, lr(j,:), jflag(j)
+             if (speak >= 1) WRITE(*,*) " j = ", j, lr(j,:), jflag(j)
           ENDDO
 
           allocate( lst_l(n_resol) )
