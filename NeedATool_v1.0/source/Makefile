@@ -1,6 +1,6 @@
 Healpix_LIB = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/lib_gfortran
 
-INCLUDE = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/include_gfortran
+Healpix_INCLUDE = /Users/dpietrob/work/cmbcodes/Healpix_2.13a/include_gfortran
 
 CFITSIO = /usr/local/lib
 
@@ -16,7 +16,7 @@ SNAME = ../synneed
 
 ANAME = ../ananeed
 
-F90FLAGS = -O3 -I$(INCLUDE) $(FFLAGS) 
+F90FLAGS = -O3 -I$(Healpix_INCLUDE) $(FFLAGS) 
 
 SOBJFILES = needlets_mod10.o  synneed_dr2.o
 
