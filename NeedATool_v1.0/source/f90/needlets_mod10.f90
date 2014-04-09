@@ -691,7 +691,8 @@
 !## Apr 2014. Specifying the TTYPE for each needlets coefficients to solve fits reading clash 
                     write(io_j,'(1i2)') j
 !##                    print*, 'TTYPE'//TRIM(ADJUSTL(io_j))
-                    CALL add_card(need_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'T_NEED_C'//io_j)
+                    if (j < 10) CALL add_card(need_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'T_NEEDC_0'//TRIM(ADJUSTL(io_j)) )
+                    if (j >= 10 .and. j < 100) CALL add_card(need_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'T_NEEDC_'//TRIM(ADJUSTL(io_j)) )
                  enddo
 
                  tempfile = TRIM(need_root)//'_B'//TRIM(io_B)//'_Nj'//TRIM(io_nresol)//'.fits'
