@@ -758,19 +758,6 @@
 !## Apr 2014
 !## Reading parameters from file header.
               IF (speak >= 0 ) WRITE(*,*) " ...extracting Needlet parameters from the header:"
-!##              call get_card( need_header, kwd, value, comment )
-!##
-!##              IF (speak >= 0 ) WRITE(*,*) " ...computing bl2:"
-!##              CALL set_needlet_environment( speak)
-!##             
-!##              mmax = lmax
-!##                 
-!##              nl = lmax
-!##              nm = nl
-!##              ALLOCATE( alm(1:p, 0:nl, 0:nm) )
-!##              alm = 0.
-!##              ALLOCATE( temp_alm(1:p, 0:lmax, 0:mmax) )
-!##              temp_alm = 0.
 
               tempfile = mapfile
               if (speak >= 1) WRITE(*,*) " ...reading needlet coefficients from file: ", TRIM(tempfile)
@@ -814,7 +801,8 @@
               IF ( speak >= 0 ) WRITE(*,*) " ...computing bl2:"
               CALL set_needlet_environment
 !## ------ Saving Bl2 if requested
-              if ( LEN( TRIM( ADJUSTL( bl2_root ) ) ) > 0) then
+!## Deactivated for the time-being: possible bug
+              if ( LEN( TRIM( ADJUSTL( bl2_root ) ) ) > 0 ) then
                  IF (speak >= 1 ) WRITE(*,'(a)') " ...writing bl2:"
                  CALL write_bl2( bl2_root )
               endif
