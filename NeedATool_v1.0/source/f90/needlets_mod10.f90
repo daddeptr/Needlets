@@ -684,15 +684,17 @@
                  CALL add_card(need_header, 'COMMENT', 'nr_schem:'//trim(adjustl(need_resol_scheme)))
                  IF (mask_applied) CALL add_card(need_header, 'COMMENT', 'maskfile:'//trim(adjustl(maskfile)))
                  do j=1,jmax
-                    write(io_j,'(1i2.2)') j
-                    write(io_hns,'(1i4.4)') dof(j,i_ns)
+!##                    IF ( jflag(j) ) THEN
+                       write(io_j,'(1i2.2)') j
+                       write(io_hns,'(1i4.4)') dof(j,i_ns)
 !                    print*, io_j
-                    CALL add_card(need_header,  'filecont', 'ns '//io_j, io_hns)
+                       CALL add_card(need_header,  'filecont', 'ns '//io_j, io_hns)
 !## Apr 2014. Specifying the TTYPE for each needlets coefficients to solve fits reading clash 
-                    write(io_j,'(1i2)') j
+                       write(io_j,'(1i2)') j
 !##                    print*, 'TTYPE'//TRIM(ADJUSTL(io_j))
-                    if (j < 10) CALL add_card(need_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'T_NEEDC_0'//TRIM(ADJUSTL(io_j)) )
-                    if (j >= 10 .and. j < 100) CALL add_card(need_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'T_NEEDC_'//TRIM(ADJUSTL(io_j)) )
+                       if (j < 10) CALL add_card(need_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'T_NEEDC_0'//TRIM(ADJUSTL(io_j)) )
+                       if (j >= 10 .and. j < 100) CALL add_card(need_header, 'TTYPE'//TRIM(ADJUSTL(io_j)), 'T_NEEDC_'//TRIM(ADJUSTL(io_j)) )
+!##                    endif
                  enddo
 
                  tempfile = TRIM(need_root)//'_B'//TRIM(io_B)//'_Nj'//TRIM(io_nresol)//'.fits'
@@ -956,9 +958,9 @@
                     CALL map2alm_iterative(jnside, lmax, mmax, iter, temp_map(0:jnpix-1,1:p), temp_alm, w8ring=w8r)
                     deallocate(w8r)
                     
-!##                    DO l = 0, lmax
 ! TEST --- keeping monopole and dipole
-                    DO l = 2, lmax
+                    DO l = 0, lmax
+!##                    DO l = 2, lmax
 ! ---
 !!$                       alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) * sqrt(bl2(imap+1,l)) / need_norm
                        alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) * sqrt(bl2(imap+1,l)) / need_norm !/ pwf(l,1)
