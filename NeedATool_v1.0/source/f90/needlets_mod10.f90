@@ -1049,6 +1049,7 @@
 !## Attempt to leave monopole and dipole in the map if asked to do so
 !## l=0,1 are set to 1 in the first needlets.
 !##               do l = 0, lmax
+               if (speak >= 2) write(*,'(1a15,1a27)') routine,"- l=0,1 forced to 1"
                if (j == 1) bl2(j,0:1) = 1.d0 
                do l = lmin, lmax
 !##
@@ -1066,8 +1067,8 @@
             enddo
 
 !!$ test
-            if (speak >= 1) print*, ""
-            if (speak >= 1) write(*,'(a15,a22,f9.2)') routine,"CHECK: sum of bl2: ", sum(bl2)
+            if (speak >= 2) print*, ""
+            if (speak >= 2) write(*,'(a15,a22,f9.2)') routine,"CHECK: sum of bl2: ", sum(bl2)
             IF ( (sum(bl2) - lmax-2+1.) .GT. 1.e-4) then 
                print*, routine//" WARNING - If not equal to the sum ell=2,...,lmax you re missing power at low ell; the reconstruction may fail"
 !               pause
@@ -1273,15 +1274,20 @@
 
               COMPLEX(dpc), ALLOCATABLE, DIMENSION(:,:,:) :: alms_temp
               INTEGER(i4b) :: l, n_pix
+              character(len=20), parameter :: routine=' >>> Build_Needlet: '
 
+!## -------------------------------------------------------------------
               n_pix = 12*need_nside**2
               ALLOCATE( alms_temp(1:1,0:nlmax,0:nmmax) )
-
-!!$              DO l = 0, lmax
+              alms_temp = 0.
+              
+!## Trying to leave l=0,1 in
+              if (speak >= 2) write(*,'(a)') routine//"leaving l=0,1 in." 
+              DO l = 0, lmax
 ! TEST
-              alms_temp(1,0:1,:) = 0. !alms(1,0:1,:)
+!##              alms_temp(1,0:1,:) = 0. !alms(1,0:1,:)
 ! --- keeping monopole and dipole
-              DO l = 2, nlmax
+!##              DO l = 2, nlmax
 ! ---
                  alms_temp(1,l,:) = alms(1,l,:) * sqrt(bl2(j,l)) / sqrt( real(n_pix) )
               ENDDO
