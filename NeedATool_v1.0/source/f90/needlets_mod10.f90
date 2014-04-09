@@ -347,7 +347,7 @@
                do_needlets        = parse_lgt(handle, 'compute_needlets', default=.true.)
                mapfile            = parse_string(handle, 'mapfile', default='input/lcdm_map_lmax500.fits', descr='fits file containing the map to be decomposed onto needlets')
 !##               mapnside           = parse_int(handle, 'mapnside', default=256, descr='Nside of the input map')
-               multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=2, descr='Sets whether remove monopole/dipole (0=None, 1=Monopole, 2=Monopole & Dipole)', vmin=0, vmax=2)
+               multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=2, descr='Sets whether remove monopole/dipole (0=None, 1=Monopole, 2=Monopole and Dipole)', vmin=0, vmax=2)
                iter = parse_int(handle, 'map2alm_iter', default=3, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
                maskfile           = parse_string(handle, 'maskfile', default='')
                if (trim(adjustl(maskfile)) .ne. '') mask_applied = .true.
@@ -360,7 +360,7 @@
 ! ------ ananeed parameters
             if (trim(adjustl(code)) == ANACODE) then
                mapfile             = parse_string(handle, 'needC_file', default='test_needlet_coefficients_2.00_Nj009.fits', descr='fits file containing needlet coefficients')
-               multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=0, descr='Sets whether remove monopole/dipole (0=none, 1=Monopole, 2=monopole and dipole)', vmin=0, vmax=2)
+               multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=0, descr='Sets whether remove monopole/dipole (0=None, 1=Monopole, 2=Monopole and Dipole)', vmin=0, vmax=2)
                iter                = parse_int(handle, 'map2alm_iter', default=3, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
                need_maskfile       = parse_string(handle, 'need_maskfile', default='')
                bl2_root            = parse_string(handle, 'bl2_root', default='', descr='Fileroot for the bl2 filter files (Optional)')
@@ -469,7 +469,7 @@
 !              REAL(sp), ALLOCATABLE, DIMENSION(:,:) :: tot_need, tot_need2, var
 !              REAL(sp), DIMENSION(0:npix-1)         :: map
 
-            INTEGER(i4b) :: i_resol, j, l, ordering, multipole_remov_deg, nmap!, jpr, iw, ist, imap, counter
+            INTEGER(i4b) :: i_resol, j, l, ordering, nmap!, multipole_remov_deg, jpr, iw, ist, imap, counter
             INTEGER(i4b), PARAMETER :: itemp = 1, lmin = 2
             INTEGER(i4b) :: mmax, in_nside!, nmaps, nbins
             INTEGER(i8b) :: in_npix
