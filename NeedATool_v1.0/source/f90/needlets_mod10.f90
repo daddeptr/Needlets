@@ -1024,6 +1024,8 @@
             real(dp) :: cen_x, low_x, high_x, top_hat, top_hat_r!, top_hat_c
             integer(i4b) :: choice, bin_mode
 
+            character(len=15), parameter :: routine=' >>> bj_of_l: '
+
             if (speak >= 1) then 
                print*, " ***************************"
                print*, " *    Subroutine bj_of_l   *"
@@ -1035,7 +1037,7 @@
  
             CALL intg(oneob,B,area,bsqr,1.d-5)
 
-            if (speak >= 1) write(*,'(1a27,1f15.6)') "  - bsqr has area equal to:", area
+            if (speak >= 1) write(*,'(1a15,1a27,1f15.6)') routine,"- bsqr has area equal to:", area
             top_hat_r = area
 
             cen_x = ( B + oneob ) / 2.d0
@@ -1043,7 +1045,13 @@
             high_x = cen_x + top_hat_r / 2.d0
  
             do j = 1, jmax
-               do l = 0, lmax
+!##
+!## Attempt to leave monopole and dipole in the map if asked to do so
+!## l=0,1 are set to 1 in the first needlets.
+!##               do l = 0, lmax
+               if (j == 1) bl2(j,0:1) = 1.d0 
+               do l = lmin, lmax
+!##
                   top_hat = 0.d0
 !                  x = l / B**(j*deltaj)
                   x = l / B**j
@@ -1059,9 +1067,9 @@
 
 !!$ test
             if (speak >= 1) print*, ""
-            if (speak >= 1) write(*,'(a22,f9.2)') " CHECK: sum of bl2: ", sum(bl2)
+            if (speak >= 1) write(*,'(a15,a22,f9.2)') routine,"CHECK: sum of bl2: ", sum(bl2)
             IF ( (sum(bl2) - lmax-2+1.) .GT. 1.e-4) then 
-               print*, " WARNING - If not equal to the sum ell=2,...,lmax you re missing power at low ell; the reconstruction may fail"
+               print*, routine//" WARNING - If not equal to the sum ell=2,...,lmax you re missing power at low ell; the reconstruction may fail"
 !               pause
             endif
             print*, ""
