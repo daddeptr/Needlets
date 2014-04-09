@@ -928,7 +928,8 @@
                     tempfile = TRIM(healpix_dir)//"data/pixel_window_n"//io_nside//".fits"
                     if (speak >= 3) print*, trim(tempfile)
 !##                    need_header(:) = ''	
-                    CALL fits2cl(tempfile, pwf, lmax, p, need_header)
+!## Pixel window function ignored for now.
+!##                    CALL fits2cl(tempfile, pwf, lmax, p, need_header)
 !##                    if (speak >= 1) print*, pwf(0:10,1)
 
                     tempfile = TRIM(healpix_dir)//"data/weight_ring_n0"//io_nside//".fits"
