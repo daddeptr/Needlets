@@ -45,8 +45,6 @@
         USE healpix_types
 ! ---
         use extension, only: nArguments, getArgument 
-!        use paramfile_io
-!!$        use misc_utils,only: assert, fatal_error!, strlowcase
 
 ! --- my modules
         USE needlets_mod
@@ -54,21 +52,8 @@
 
         IMPLICIT NONE
 
-! insert parsing module and necessary declaration variables
-
-        INTEGER(i4b)                :: n_args, i
-        CHARACTER(LEN=FILENAMELEN)  :: arg
-!        logical(lgt)                :: do_double
         CHARACTER(len=FILENAMELEN)  :: paramfile
         CHARACTER(LEN=10)           :: lcode
-
-        LOGICAL :: interactive = .TRUE.
-
-!        TYPE(input_keys) :: input_v
-!        TYPE(io_vars) :: out_v
-
-! count arguments, should be 0, 1 or 2
-!        n_args = nArguments()
 
         WRITE(*,*) " "
         WRITE(*,*) "  ***********************************"
@@ -78,72 +63,15 @@
 
         lcode = SYNCODE
 
-!!$        n_args = COMMAND_ARGUMENT_COUNT()
-!!$        call assert(n_args <= 2,' Usage: '//TRIM(SYNCODE)//' [-s|--single|-d|--double] [parameter_file_name]')
-
         paramfile = ''
         if (nArguments() == 1) call getArgument(1, paramfile) 
         call parsing_hpx(paramfile, lcode)
-!!$        SELECT CASE(n_args)
-!!$           CASE (0)
-!!$              interactive = .TRUE.
-!!$              CALL get_input_pars_interactive(out_v,lcode)
-!!$           CASE (1)
-!!$              interactive = .FALSE.
-!!$              CALL getArgument(1, arg)
-!!$              arg = TRIM(ADJUSTL(arg))
-!!$              paramfile = arg
-!!$              CALL parsing(paramfile)
-!!$              CALL keys2values(out_v,lcode)
-!!$           CASE DEFAULT
-!!$              CALL fatal_error(SYNCODE//': Invalid argument: '//trim(arg))
-!!$        END SELECT
-
-
-!        lcode = trim(strlowcase(CODE))
-!        call assert(n_args <= 2,' Usage: '//trim(lcode)//' [-s|--single|-d|--double] [parameter_file_name]')
-
-!        parafile = ''
-!        do_double = .false.
-
-! parse arguments
-!        do i=1, n_args
-!           call getArgument(i, arg)
-!           arg = trim(adjustl(arg))
-!           if (arg(1:1) == '-') then
-!              select case (trim(arg))
-!              case ('-d', '--double')
-!                 do_double = .true.
-!              case ('-s', '--single')
-!                 do_double = .false.
-!              case default
-!                 call fatal_error(CODE//': Invalid argument: '//trim(arg))
-!              end select
-!           else
-!              parafile = arg
-!           endif
-!        enddo
-
-! start calculations
-!        if (do_double) then
-!           call syn_sub_d(parafile)
-!        else
-!           call syn_sub_s(parafile)
-!        endif
-
-!        print*, " input finished!"
-
-!        STOP
 
         print*, ""
         print*, " Starting computation..."
         print*, ""
 
         CALL synneed_sub
-
- !!$        CALL write_params_used(lcode)
-
-        STOP
 
       END PROGRAM syneed
 

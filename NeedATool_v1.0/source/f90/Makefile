@@ -13,8 +13,9 @@ CFITSIO = /opt/local/lib
 
 ### gfortran
 F90C    = gfortran
-FFLAGS  = -O3 -DGFORTRAN -fno-second-underscore -m64 -fopenmp -ffree-line-length-none #$(CHECKFLAGS)
-CHECKFLAGS = -fbounds-check -g -fbacktrace
+CHECKFLAGS = -fbounds-check -g -fbacktrace -pedantic -Wall -pedantic-errors -fcheck-array-temporaries -finit-local-zero
+FFLAGS  = -O3 -I$(F90_INCDIR) -DGFORTRAN -fno-second-underscore -fopenmp -ffree-line-length-none $(CHECKFLAGS)
+### FFLAGS  = -O3 -DGFORTRAN -fno-second-underscore -m64 -fopenmp -ffree-line-length-none #$(CHECKFLAGS)
 
 LIBRARIES = -L$(Healpix_LIB) -L$(CFITSIO) -lhealpix -lcfitsio
 

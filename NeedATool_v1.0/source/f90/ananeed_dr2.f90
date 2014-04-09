@@ -53,21 +53,8 @@
 
         IMPLICIT NONE
 
-! insert parsing module and necessary declaration variables
-
-        INTEGER(i4b)                :: n_args, i
-        CHARACTER(LEN=FILENAMELEN)  :: arg
-!        logical(lgt)                :: do_double
         CHARACTER(len=FILENAMELEN)  :: paramfile
         CHARACTER(LEN=10)           :: lcode
-
-        LOGICAL :: interactive = .TRUE.
-
-!        TYPE(input_keys) :: input_v
-!        TYPE(io_vars) :: out_v
-
-! count arguments, should be 0, 1 or 2
-!        n_args = nArguments()
 
         WRITE(*,*) " "
         WRITE(*,*) "  ***********************************"
@@ -77,28 +64,9 @@
 
         lcode = ANACODE
 
- !!$        n_args = COMMAND_ARGUMENT_COUNT()
-
- !        print*, n_args
- !!$        call assert(n_args <= 2,' Usage: '//TRIM(ANACODE)//' [-s|--single|-d|--double] [parameter_file_name]')
-
          paramfile = ''
         if (nArguments() == 1) call getArgument(1, paramfile) 
         call parsing_hpx(paramfile, lcode)
- !!$        SELECT CASE(n_args)
- !!$           CASE (0)
- !!$              interactive = .TRUE.
- !!$              CALL get_input_pars_interactive(out_v,lcode)
- !!$           CASE (1)
- !!$              interactive = .FALSE.
- !!$              CALL getArgument(1, arg)
- !!$              arg = TRIM(ADJUSTL(arg))
- !!$              paramfile = arg
- !!$              CALL parsing(paramfile)
- !!$              CALL keys2values(out_v,lcode)
- !!$           CASE DEFAULT
- !!$              CALL fatal_error(ANACODE//': Invalid argument: '//trim(arg))
- !!$        END SELECT
 
         print*, ""
         print*, " Starting computation..."
@@ -106,9 +74,7 @@
 
         CALL ananeed_sub
 
- !!$        CALL write_params_used(lcode)
-
-        STOP
+        print*, 'Done. Good Bye.'
 
       END PROGRAM ananeed
 
