@@ -1,7 +1,5 @@
-healpix_dir = /Users/dpietrob/work/cmbcodes/Healpix_2.13a
-l_max = 500
-B = 2.0
-mapfile = test_needlet_coefficients_2.00_Nj009.fits 
+feedback = 1
+needC_file = test_needlet_coefficients_B2.00_Nj009.fits 
 mapnside = 256
-# need_maskfile = ''
 need_root = !test
+bl2_root = !atest_bl2

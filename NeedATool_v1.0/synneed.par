@@ -1,12 +1,6 @@
-healpix_dir = /Users/dpietrob/work/cmbcodes/Healpix_2.13a
-l_max =          500
-nl_min = 8
+feedback = 1
 B =    2.0000000000000000
-nside_boost =            2
 compute_needlets =  T
 mapfile = input/lcdm_map_lmax500.fits
-mapnside =          256
-# maskfile = ''
-# beamfile
 bl2_root = !test_bl2
 need_root = !test_needlet_coefficients
