@@ -359,12 +359,12 @@
 
 ! ------ ananeed parameters
             if (trim(adjustl(code)) == ANACODE) then
-               mapfile             = parse_string(handle, 'needC_file', default='test_needlet_coefficients_2.00_Nj009.fits', descr='fits file containing needlet coefficients')
+               mapfile             = parse_string(handle, 'needC_file', default='test_needlet_coefficients_B2.00_Nj009.fits', descr='fits file containing needlet coefficients')
                multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=0, descr='Sets whether remove monopole/dipole (0=None, 1=Monopole, 2=Monopole and Dipole)', vmin=0, vmax=2)
                iter                = parse_int(handle, 'map2alm_iter', default=1, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
                need_maskfile       = parse_string(handle, 'need_maskfile', default='')
                bl2_root            = parse_string(handle, 'bl2_root', default='', descr='Fileroot for the bl2 filter files (Optional)')
-               need_root           = parse_string(handle, 'map_root', default='!test_', descr='Fileroot for the reconstructed map file')
+               need_root           = parse_string(handle, 'map_root', default='!test', descr='Fileroot for the reconstructed map file')
                mapnside            = parse_int(handle, 'mapnside', default=-1, descr='Nside of the output reconstructed map')
                jlo                 = parse_int(handle, 'lower_j', default=1, descr='Lowest needlet order included in the reconstructed map')
                jhi                 = parse_int(handle, 'higher_j', default=-1, descr='Highest needlet order included in the reconstructed map (-1 means jmax found in the file)')
@@ -909,8 +909,11 @@
 !##              print*, size(temp_alm)
 !##              print*, size(need_map,2)
 !## Apr 2014 Adding needlet scale selection
-              if (jlo < 1) then jlo = 1
-              if (jhi < 0) then jhi = n_resol
+              if (jlo < 1)       jlo = 1
+              if (jlo > n_resol) jlo = n_resol
+              if (jhi < 0)       jhi = n_resol
+              if (jhi > n_resol) jhi = n_resol
+              if (speak >= 1) write(*,'(a,i3,a,i3,a)') ' >>> ANANEED: Reconstructing map using j in [',jlo,',',jhi,']'
 !##              DO imap = 0, n_resol-1
               DO imap = jlo-1, jhi-1
                  IF ( jflag(imap+1) ) THEN 
