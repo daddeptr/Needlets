@@ -76,7 +76,7 @@
           CHARACTER(LEN=10), PARAMETER               :: SYNCODE = "SYNNEED"
           CHARACTER(LEN=10), PARAMETER               :: ANACODE = "ANANEED"
           CHARACTER(LEN=15), PARAMETER               :: MYVERSION = "1.1 - Apr 2014"
-          INTEGER(i4b)                               :: nside, mapnside, nside_boost=2, in_order, multipole_remov_deg, iter
+          INTEGER(i4b)                               :: nside, mapnside, nside_boost=2, in_order, multipole_remov_deg, iter, jlo, jhi
           INTEGER(i8b)                               :: npix, mapnpix
           INTEGER(i4b), PARAMETER                    :: i_lw=1, i_ave=2, i_up=3, i_dl=4, i_dof=5, i_ns=6 
           INTEGER(i4b), DIMENSION(:,:), ALLOCATABLE  :: dof
@@ -336,7 +336,7 @@
 
 ! ------ synneed parameters
             if (trim(adjustl(code)) == SYNCODE) then
-               lmax              = parse_int(handle, 'l_max', default=500, descr='Maximum ell at which the analysis is carried out')
+               lmax              = parse_int(handle, 'l_max', default=500, descr='Maximum ell at which the analysis is carried out. Since a multipole is fully retained across two needlet scales, it is useful to choose a larger range than what you are interested in.')
                B                 = parse_double(handle, 'B', default=2._dp, descr='Filter range parameter')
 !!$            deltaj            = parse_double(handle, 'delta_j', default=1._dp)
 !!$            write(io_dj,'(1f5.2)') deltaj
@@ -348,7 +348,7 @@
                mapfile            = parse_string(handle, 'mapfile', default='input/lcdm_map_lmax500.fits', descr='fits file containing the map to be decomposed onto needlets')
 !##               mapnside           = parse_int(handle, 'mapnside', default=256, descr='Nside of the input map')
                multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=2, descr='Sets whether remove monopole/dipole (0=None, 1=Monopole, 2=Monopole and Dipole)', vmin=0, vmax=2)
-               iter = parse_int(handle, 'map2alm_iter', default=3, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
+               iter = parse_int(handle, 'map2alm_iter', default=1, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
                maskfile           = parse_string(handle, 'maskfile', default='')
                if (trim(adjustl(maskfile)) .ne. '') mask_applied = .true.
                beamfile           = parse_string(handle, 'beamfile', default='')
@@ -361,11 +361,13 @@
             if (trim(adjustl(code)) == ANACODE) then
                mapfile             = parse_string(handle, 'needC_file', default='test_needlet_coefficients_2.00_Nj009.fits', descr='fits file containing needlet coefficients')
                multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=0, descr='Sets whether remove monopole/dipole (0=None, 1=Monopole, 2=Monopole and Dipole)', vmin=0, vmax=2)
-               iter                = parse_int(handle, 'map2alm_iter', default=3, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
+               iter                = parse_int(handle, 'map2alm_iter', default=1, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
                need_maskfile       = parse_string(handle, 'need_maskfile', default='')
                bl2_root            = parse_string(handle, 'bl2_root', default='', descr='Fileroot for the bl2 filter files (Optional)')
                need_root           = parse_string(handle, 'map_root', default='!test_', descr='Fileroot for the reconstructed map file')
                mapnside            = parse_int(handle, 'mapnside', default=-1, descr='Nside of the output reconstructed map')
+               jlo                 = parse_int(handle, 'lower_j', default=1, descr='Lowest needlet order included in the reconstructed map')
+               jhi                 = parse_int(handle, 'higher_j', default=-1, descr='Highest needlet order included in the reconstructed map (-1 means jmax found in the file)')
             endif
 
             call parse_summarize(handle, code=code)
@@ -523,7 +525,7 @@
                      WRITE(*,*) "    ordering:  ", in_order
                      WRITE(*,*) "    map nmap:  ", nmap
                      if (nmap > 1) then
-                        write(*,*) "Found more than one field. Currently TEMPERATURE only."
+                        write(*,*) "Found more than one field. Currently SCALR field only."
                      endif
                      print*, ""
                      WRITE(*,*) "    mask:      ", mask_applied
@@ -635,7 +637,8 @@
 !##                 ALLOCATE(need_mask(0:npix-1,0:n_resol-1))
 !##                 need_mask = hpx_dbadval
 
-                 IF (speak >= 1) WRITE(*,*) " ...building needlets and masks for each resolution:"
+!##                 IF (speak >= 1) WRITE(*,*) " ...building needlets and masks for each resolution:"
+                 IF (speak >= 1) WRITE(*,*) " ...building needlets for each resolution:"
                  DO i_resol=0,n_resol-1
 
                     IF ( jflag(i_resol+1) ) then
@@ -905,7 +908,11 @@
 !##              print*, size(temp_map)
 !##              print*, size(temp_alm)
 !##              print*, size(need_map,2)
-              DO imap = 0, n_resol-1
+!## Apr 2014 Adding needlet scale selection
+              if (jlo < 1) then jlo = 1
+              if (jhi < 0) then jhi = n_resol
+!##              DO imap = 0, n_resol-1
+              DO imap = jlo-1, jhi-1
                  IF ( jflag(imap+1) ) THEN 
                     write(*,'(a6,i3)') " j = ", imap+1
                     temp_map = 0.
