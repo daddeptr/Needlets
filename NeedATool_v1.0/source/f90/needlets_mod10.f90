@@ -780,8 +780,11 @@
 
 !## Apr 2014
 !## Reading parameters from file header.
-              if ( len(filters_file) > 0 ) then
+              external_filters = .FALSE.
+              if ( len(TRIM(ADJUSTL(filters_file))) > 0 ) then
                  external_filters = .TRUE.
+                 print*, ' external_filters provided!'
+                 print*, filters_file
 !##                 if (speak >=1) write(*,'(a,1i3)') ' # of filters: ', n_filters
 !##                 if (speak >=1) write(*,'(a,1i3)') ' # filters lmax: ', filters_lmax
               endif
