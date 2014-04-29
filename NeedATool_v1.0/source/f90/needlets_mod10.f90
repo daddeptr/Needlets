@@ -1108,7 +1108,7 @@
 !##              endif
 
               if (.not. external_filters) DEALLOCATE( w5map, temp_map, temp_alm, alm, dof, jflag, bl2, need_map )
-              if (.not. external_filters) DEALLOCATE( w5map, temp_map, temp_alm, alm, bl2, need_map )
+              if (external_filters) DEALLOCATE( w5map, temp_map, temp_alm, alm, bl2, need_map )
               if (mask_applied) deallocate(multipoles_fit, mask)
 
               CALL CPU_TIME(t2)
