@@ -364,7 +364,12 @@
                multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=0, descr='Sets whether remove monopole/dipole (0=None, 1=Monopole, 2=Monopole and Dipole)', vmin=0, vmax=2)
                iter                = parse_int(handle, 'map2alm_iter', default=1, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
                need_maskfile       = parse_string(handle, 'need_maskfile', default='')
-               filters_file        = parse_string(handle, 'filters_file', default='', descr='fits file containing (general) filters to be deconvolved')
+               filters_file        = parse_string(handle, 'filters_file', default='', descr='fits file containing the (general) filters to be deconvolved')
+!## Filters dimensions set by the coefficients properties
+!##               if (len(filters_file) > 0) then
+!##                  filters_lmax     = parse_int(handle, 'filters_lmax', default=1000, descr='Maximum ell of the filter function')
+!##                  n_resol          = parse_int(handle, 'n_filters', default=1, descr='Numbers of filters: it has to match the number of coefficients')               
+!##               endif
                bl2_root            = parse_string(handle, 'bl2_root', default='', descr='Fileroot for the bl2 filter files (Optional)')
                need_root           = parse_string(handle, 'map_root', default='!test', descr='Fileroot for the reconstructed map file')
                mapnside            = parse_int(handle, 'mapnside', default=-1, descr='Nside of the output reconstructed map')
@@ -760,6 +765,7 @@
               COMPLEX(dp), ALLOCATABLE, DIMENSION(:,:,:) :: temp_alm
 
               CHARACTER(LEN=80), DIMENSION(120)          :: need_header
+              CHARACTER(LEN=80), DIMENSION(60)           :: bl2_header
               CHARACTER(LEN=80)                          :: comment
 	
               LOGICAL                                    :: external_filters
@@ -774,7 +780,11 @@
 
 !## Apr 2014
 !## Reading parameters from file header.
-              if (len(filters_file) > 0) external_filters = .TRUE.
+              if ( len(filters_file) > 0 ) then
+                 external_filters = .TRUE.
+!##                 if (speak >=1) write(*,'(a,1i3)') ' # of filters: ', n_filters
+!##                 if (speak >=1) write(*,'(a,1i3)') ' # filters lmax: ', filters_lmax
+              endif
               IF (speak >= 0 ) WRITE(*,*) " ...extracting Needlet parameters from the header:"
 
               tempfile = mapfile
@@ -826,26 +836,30 @@
                     IF (speak >= 1 ) WRITE(*,'(a)') " ...writing bl2:"
                     CALL write_bl2( bl2_root )
                  endif
-                 if (nmap .ne. n_resol) then
-                    print*, " WARNING - Mismatch between number of resolutions and maps found in the fits file:" 
-                    print*, n_resol, " VS ", nmap
-                    print*, " n_resol set equal to nmap. Recovered map may not be accurate."
-!##                 pause
-                    n_resol = nmap
-                 endif
               else
 !## Reading in general filters
-                 n_resol = getnumext_fits( filters_file )
-                 if (speak >= 0) WRITE(*,'(a,1i3)') 'Number of filters found: ', n_resol
-		         if (nmap .ne. n_resol) then
-                    PRINT*, " WARNING - Mismatch between number of resolutions and maps found in the fits file:" 
-                    print*, n_resol, " VS ", nmap
-                    STOP
+                 if (.not. allocated(bl2)) then
+                    n_resol = nmap
+                    allocate( bl2(0:lmax,n_resol) )
+                    bl2 = 0.
+                 else
+                    print*, ' ERROR: bl2 already allocated'
+                 endif
+!##                 CALL input_map(filters_file, bl2, lmax+1, nmap)
+                 CALL fits2cl(filters_file, bl2, lmax, nmap, bl2_header)
+                 print*, sum(bl2)
 !##                    print*, " n_resol set equal to nmap. Recovered map may not be accurate."
 !##                 pause
 !##                    n_resol = nmap
-                 endif
-STOP
+!##STOP
+              endif
+
+              if (nmap .ne. n_resol) then
+                 print*, " WARNING - Mismatch between number of resolutions and maps found in the fits file:" 
+                 print*, n_resol, " VS ", nmap
+                 print*, " n_resol set equal to nmap. Recovered map may not be accurate."
+!##                 pause
+                 n_resol = nmap
               endif
 
               if (in_order .eq. 0) print*, " WARNING - Undefined ordering: assumed RING."
@@ -943,33 +957,85 @@ STOP
               if (speak >= 1) write(*,'(a,i3,a,i3,a)') ' >>> ANANEED: Reconstructing map using j in [',jlo,',',jhi,']'
 !##              DO imap = 0, n_resol-1
               DO imap = jlo-1, jhi-1
-                 IF ( jflag(imap+1) ) THEN 
+                 IF (.not. external_filters) THEN
+                    IF ( jflag(imap+1) ) THEN 
+                       write(*,'(a6,i3)') " j = ", imap+1
+                       temp_map = 0.
+                       temp_alm = 0.
+                          if (need_resol_scheme .eq. 'constant_nside') jnside = nside
+
+                          if (need_resol_scheme .eq. 'scaling_dof')    jnside = dof(imap+1,i_ns)
+ 
+                          if (need_resol_scheme .eq. 'scaling_boost')  jnside = set_nside( dof(imap+1,i_up) )
+                          jnpix = 12 * jnside**2
+                          need_norm = 1./sqrt(real(jnpix))
+                       if (speak >= 3) then
+                          print*, ' jnside = ', jnside
+                          print*, ' jnpix  = ', jnpix
+                          print*, ' need_norm = ', need_norm
+                       endif
+                       temp_map(0:jnpix-1,1) = need_map(0:jnpix-1,imap)
+!##                    if (speak >= 2) print*, sum( temp_map(0:jnpix-1,1) )
+
+!print*, "here"
+                       WRITE(io_nside,'(1i4.4)') jnside
+                       tempfile = TRIM(healpix_dir)//"data/pixel_window_n"//io_nside//".fits"
+                       if (speak >= 3) print*, trim(tempfile)
+!##                    need_header(:) = ''	
+!## Pixel window function ignored for now.
+!##                    CALL fits2cl(tempfile, pwf, lmax, p, need_header)
+!##                    if (speak >= 1) print*, pwf(0:10,1)
+
+                       tempfile = TRIM(healpix_dir)//"data/weight_ring_n0"//io_nside//".fits"
+                       if (speak >= 2) print*, "Reading w8r weights from: '", trim(adjustl(tempfile)),"'"
+!##                    if (speak >= 0) print*, "here"
+                       if (.not. allocated(w8r)) allocate( w8r(1:2*jnside, 1:p) )
+!##                    if (speak >= 0) print*, "here"
+                       w8r = 0.d0
+!##                    if (speak >= 0) print*, "here", 2*jnside
+                       CALL input_map( tempfile, w8r, 2*jnside, p )
+!##                    if (speak >= 0) print*, "here"
+                       w8r = 1._dp + w8r
+!##                    print*, size(w8r)
+!##                    print*, sum(w8r)
+!## Apr 2014
+                       if (multipole_remov_deg > 0) then
+!##                    if (speak >= 0) print*, "here"
+                          IF (.NOT. mask_applied) CALL remove_dipole(jnside, temp_map(0:jnpix-1,1), ordering, multipole_remov_deg, multipoles_fit, zbounds)
+!##                    if (speak >= 0) print*, "here"
+                          IF (mask_applied) CALL remove_dipole(jnside, temp_map(0:jnpix-1,1), ordering, multipole_remov_deg, multipoles_fit, zbounds, mask=mask(0:jnpix-1,imap-1))
+                       endif
+
+!##                    if (speak >= 2) print*, "here"
+                       CALL map2alm_iterative(jnside, lmax, mmax, iter, temp_map(0:jnpix-1,1:p), temp_alm, w8ring=w8r)
+                       deallocate(w8r)
+                    
+! TEST --- keeping monopole and dipole
+                       DO l = 0, lmax
+!##                    DO l = 2, lmax
+! ---
+!!$                       alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) * sqrt(bl2(imap+1,l)) / need_norm
+                          alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) * sqrt(bl2(imap+1,l)) / need_norm !/ pwf(l,1)
+                       ENDDO
+                       print*, ''
+                    ENDIF
+                 ELSE ! external_filters
+                    jnside = nside
+                    jnpix = npix
+                    need_norm = 1.
                     write(*,'(a6,i3)') " j = ", imap+1
                     temp_map = 0.
                     temp_alm = 0.
-                    if (need_resol_scheme .eq. 'constant_nside') jnside = nside
-
-                    if (need_resol_scheme .eq. 'scaling_dof')    jnside = dof(imap+1,i_ns)
-
-                    if (need_resol_scheme .eq. 'scaling_boost')  jnside = set_nside( dof(imap+1,i_up) )
-                    jnpix = 12 * jnside**2
-                    need_norm = 1./sqrt(real(jnpix))
                     if (speak >= 3) then
                        print*, ' jnside = ', jnside
                        print*, ' jnpix  = ', jnpix
                        print*, ' need_norm = ', need_norm
                     endif
                     temp_map(0:jnpix-1,1) = need_map(0:jnpix-1,imap)
-!##                    if (speak >= 2) print*, sum( temp_map(0:jnpix-1,1) )
 
-!print*, "here"
                     WRITE(io_nside,'(1i4.4)') jnside
                     tempfile = TRIM(healpix_dir)//"data/pixel_window_n"//io_nside//".fits"
                     if (speak >= 3) print*, trim(tempfile)
-!##                    need_header(:) = ''	
-!## Pixel window function ignored for now.
-!##                    CALL fits2cl(tempfile, pwf, lmax, p, need_header)
-!##                    if (speak >= 1) print*, pwf(0:10,1)
 
                     tempfile = TRIM(healpix_dir)//"data/weight_ring_n0"//io_nside//".fits"
                     if (speak >= 2) print*, "Reading w8r weights from: '", trim(adjustl(tempfile)),"'"
@@ -1000,9 +1066,9 @@ STOP
 !##                    DO l = 2, lmax
 ! ---
 !!$                       alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) * sqrt(bl2(imap+1,l)) / need_norm
-                       alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) * sqrt(bl2(imap+1,l)) / need_norm !/ pwf(l,1)
+                       if ( abs( bl2(l,imap+1) ) .gt. 1.d-10) alm(:,l,0:mmax) = alm(:,l,0:mmax) + temp_alm(:,l,0:mmax) / bl2(l,imap+1) !/ pwf(l,1)
                     ENDDO
-                 print*, ''
+                    print*, ''
                  ENDIF
               ENDDO
 
@@ -1025,7 +1091,8 @@ STOP
 !##              CALL add_card(need_header, 'filecont', 'Reconstructed map')
               CALL add_card(need_header, 'COMMENT', 'Reconstructed map')
 
-              tempfile = TRIM(need_root)//'_B'//TRIM(io_B)//'_Nj'//TRIM(io_nresol)//'_reconstructed_map.fits'
+              if (.not. external_filters) tempfile = TRIM(need_root)//'_B'//TRIM(io_B)//'_Nj'//TRIM(io_nresol)//'_reconstructed_map.fits'
+              if (external_filters) tempfile = TRIM(need_root)//'_reconstructed_map.fits'
 
               if (speak >= 1) WRITE(*,*) " ...writing map on file: ", TRIM(tempfile)
               
@@ -1037,7 +1104,8 @@ STOP
 !##                 CALL write_bl2( bl2_root )
 !##              endif
 
-              DEALLOCATE( w5map, temp_map, temp_alm, alm, dof, jflag, bl2, need_map )
+              if (.not. external_filters) DEALLOCATE( w5map, temp_map, temp_alm, alm, dof, jflag, bl2, need_map )
+              if (.not. external_filters) DEALLOCATE( w5map, temp_map, temp_alm, alm, bl2, need_map )
               if (mask_applied) deallocate(multipoles_fit, mask)
 
               CALL CPU_TIME(t2)
