@@ -601,8 +601,8 @@
 
                  mmax = lmax                 
                  ALLOCATE( alm(1:p,0:lmax,0:mmax) )
-                 IF (.NOT. mask_applied) CALL map2alm_iterative(mapnside, lmax, mmax, iter, w5map, alm, w8ring=w8r)
-                 IF (mask_applied) CALL map2alm_iterative(mapnside, lmax, mmax, iter, w5map, alm, w8ring=w8r, mask=mask)
+                 IF (.NOT. mask_applied) CALL map2alm_iterative(mapnside, lmax, mmax, iter, w5map(:,1), alm, w8ring=w8r)
+                 IF (mask_applied) CALL map2alm_iterative(mapnside, lmax, mmax, iter, w5map(:,1), alm, w8ring=w8r, mask=mask)
 
 ! ------ Correcting for the pwf
 ! more precise the reconstruction if not used
