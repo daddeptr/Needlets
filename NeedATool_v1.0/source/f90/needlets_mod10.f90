@@ -134,12 +134,12 @@
 ! **********************************************************************
 
 !##          subroutine set_needlet_environment(voice)
-          subroutine set_needlet_environment
+          subroutine set_needlet_environment( code )
 
             implicit none
 
-            character(len=10) :: code
-            character(len=30), parameter :: routine = ' >>> set_needlet_environment:'
+            character(len=10), intent(IN) :: code
+            character(len=30), parameter  :: routine = ' >>> set_needlet_environment:'
             
 !## Apr 2014           logical, optional, intent(inout) :: voice
 !##           if ( .not. present(voice) ) voice = .true.
@@ -171,7 +171,7 @@
 
             CALL get_dof
 
-            code = SYNCODE
+!##            code = SYNCODE
             need_resol_scheme = 'constant_nside'
             if (code .eq. SYNCODE) then
 
@@ -502,7 +502,7 @@
 !##                              w8r set based on the input map
 !## ---
             IF (speak >= 0) WRITE(*,*) " ...computing needlets coefficients:"
-            CALL set_needlet_environment
+            CALL set_needlet_environment( SYNCODE )
             CALL write_bl2(bl2_root)
 
             need_required:IF (do_needlets) THEN
@@ -832,7 +832,7 @@
 !##              if (speak >= 1) write(*,'(a8,i5)') 'lmax = ', lmax
 
                  IF ( speak >= 0 ) WRITE(*,*) " ...computing bl2:"
-                 CALL set_needlet_environment
+                 CALL set_needlet_environment( ANACODE )
 !## ------ Saving Bl2 if requested
 !## Deactivated for the time-being: possible bug
                  if ( LEN( TRIM( ADJUSTL( bl2_root ) ) ) > 0 ) then
