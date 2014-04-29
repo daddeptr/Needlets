@@ -103,6 +103,7 @@
           CHARACTER(LEN=filenamelen)   :: bl2_root
           CHARACTER(LEN=filenamelen)   :: need_root
           CHARACTER(LEN=filenamelen)   :: need_resol_scheme = 'constant_nside'
+          CHARACTER(LEN=filenamelen)   :: filters_file
 
           CHARACTER(LEN=5) :: io_B
           CHARACTER(LEN=5) :: io_dj
@@ -341,7 +342,7 @@
 !!$            deltaj            = parse_double(handle, 'delta_j', default=1._dp)
 !!$            write(io_dj,'(1f5.2)') deltaj
 !## nside_boost is an advanced parameters and it is to hard code it equal 2.
-!##               nside_boost       = parse_int(handle, 'nside_boost', default=2, descr='Sets Nside of the needlet coefficient map (lmax < nside_boost*nside)', vmin=1, vmax=4)
+               nside_boost       = parse_int(handle, 'nside_boost', default=2, descr='Sets Nside of the needlet coefficient map (lmax < nside_boost*nside)', vmin=1, vmax=4)
 !## Needlets parameters necessary to build Bl2. Ananeed will read these parameters from the header.
 !!$            need_resol_scheme = parse_string(handle, 'need_resol_scheme', default='constant_nside')
                do_needlets        = parse_lgt(handle, 'compute_needlets', default=.true.)
@@ -363,6 +364,7 @@
                multipole_remov_deg = parse_int(handle, 'remove_mono_dipole', default=0, descr='Sets whether remove monopole/dipole (0=None, 1=Monopole, 2=Monopole and Dipole)', vmin=0, vmax=2)
                iter                = parse_int(handle, 'map2alm_iter', default=1, descr='Order of the map2alm iteration)', vmin=0, vmax=3)
                need_maskfile       = parse_string(handle, 'need_maskfile', default='')
+               filters_file        = parse_string(handle, 'filters_file', default='', descr='fits file containing (general) filters to be deconvolved')
                bl2_root            = parse_string(handle, 'bl2_root', default='', descr='Fileroot for the bl2 filter files (Optional)')
                need_root           = parse_string(handle, 'map_root', default='!test', descr='Fileroot for the reconstructed map file')
                mapnside            = parse_int(handle, 'mapnside', default=-1, descr='Nside of the output reconstructed map')
@@ -490,7 +492,9 @@
 
 !## ------ Only two parameters set internally
             ordering = 1 ! 1:RING, 2:NEST
-            nside_boost = 2
+!##            nside_boost = 2 ! Kept as parameters to avoid huge files for high ell.
+!##                              This way we allow for lmax=2.5*Nside and such.
+!##                              w8r set based on the input map
 !## ---
             IF (speak >= 0) WRITE(*,*) " ...computing needlets coefficients:"
             CALL set_needlet_environment
@@ -589,12 +593,13 @@
 
 ! ------ Correcting for the w8ring
                  WRITE(io_nside,'(1i4.4)') mapnside
-                 allocate( w8r(1:nside_boost*mapnside,1:p) )
+!##                 allocate( w8r(1:nside_boost*mapnside,1:p) )
+                 allocate( w8r(1:2*mapnside,1:p) )
                  w8r = 0.
                  tempfile = TRIM(adjustl(healpix_dir))//"data/weight_ring_n0"//io_nside//".fits"
                  IF (speak >= 1) print*, " Reading w8r correction..."
-!##                 CALL input_map(tempfile, w8r, 2*mapnside, p)
-                 CALL input_map(tempfile, w8r, nside_boost*mapnside, p)
+!##                 CALL input_map(tempfile, w8r, nside_boost*mapnside, p)
+                 CALL input_map(tempfile, w8r, 2*mapnside, p)
 
 !                 print*, " !!! WARNING - w8r removed in synneed !!!"
                  w8r = 1._dp + w8r
@@ -756,7 +761,8 @@
 
               CHARACTER(LEN=80), DIMENSION(120)          :: need_header
               CHARACTER(LEN=80)                          :: comment
-
+	
+              LOGICAL                                    :: external_filters
 !## -------------------------------------------------------------------
 !## Apr 2014              logical :: speak = .true.
 
@@ -768,6 +774,7 @@
 
 !## Apr 2014
 !## Reading parameters from file header.
+              if (len(filters_file) > 0) external_filters = .TRUE.
               IF (speak >= 0 ) WRITE(*,*) " ...extracting Needlet parameters from the header:"
 
               tempfile = mapfile
@@ -802,28 +809,43 @@
 !##              mask = 0.
 !##              CALL input_map(tempfile, need_map, npix, n_resol, header=need_header)
               CALL input_map(tempfile, need_map, npix, nmap, header=need_header)
-              if ( speak >= 1 ) write(*,'(a)') 'Extracting needlet parameter (B) from fits header'
-              call get_card( need_header, "B", B, comment )
+!## Allowing for external filters to be deconvolved
+              if (.not. external_filters) then             
+                 if ( speak >= 1 ) write(*,'(a)') 'Extracting needlet parameter (B) from fits header'
+                 call get_card( need_header, "B", B, comment )
 !##              call get_card( need_header, "MAX-LPOL", lmax, comment )
 !##              print*, comment
-              IF ( speak >= 1 ) WRITE(*,'(a20,f7.4)') '           B: ', B
+                 IF ( speak >= 1 ) WRITE(*,'(a20,f7.4)') '           B: ', B
 !##              if (speak >= 1) write(*,'(a8,i5)') 'lmax = ', lmax
 
-              IF ( speak >= 0 ) WRITE(*,*) " ...computing bl2:"
-              CALL set_needlet_environment
+                 IF ( speak >= 0 ) WRITE(*,*) " ...computing bl2:"
+                 CALL set_needlet_environment
 !## ------ Saving Bl2 if requested
 !## Deactivated for the time-being: possible bug
-              if ( LEN( TRIM( ADJUSTL( bl2_root ) ) ) > 0 ) then
-                 IF (speak >= 1 ) WRITE(*,'(a)') " ...writing bl2:"
-                 CALL write_bl2( bl2_root )
-              endif
-
-              if (nmap .ne. n_resol) then
-                 print*, " WARNING - Mismatch between number of resolutions and maps found in the fits file:" 
-                 print*, n_resol, " VS ", nmap
-                 print*, " n_resol set equal to nmap. Recovered map may not be accurate."
+                 if ( LEN( TRIM( ADJUSTL( bl2_root ) ) ) > 0 ) then
+                    IF (speak >= 1 ) WRITE(*,'(a)') " ...writing bl2:"
+                    CALL write_bl2( bl2_root )
+                 endif
+                 if (nmap .ne. n_resol) then
+                    print*, " WARNING - Mismatch between number of resolutions and maps found in the fits file:" 
+                    print*, n_resol, " VS ", nmap
+                    print*, " n_resol set equal to nmap. Recovered map may not be accurate."
 !##                 pause
-                 n_resol = nmap
+                    n_resol = nmap
+                 endif
+              else
+!## Reading in general filters
+                 n_resol = getnumext_fits( filters_file )
+                 if (speak >= 0) WRITE(*,'(a,1i3)') 'Number of filters found: ', n_resol
+		         if (nmap .ne. n_resol) then
+                    PRINT*, " WARNING - Mismatch between number of resolutions and maps found in the fits file:" 
+                    print*, n_resol, " VS ", nmap
+                    STOP
+!##                    print*, " n_resol set equal to nmap. Recovered map may not be accurate."
+!##                 pause
+!##                    n_resol = nmap
+                 endif
+STOP
               endif
 
               if (in_order .eq. 0) print*, " WARNING - Undefined ordering: assumed RING."
