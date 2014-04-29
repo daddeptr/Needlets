@@ -476,7 +476,7 @@
             INTEGER(i4b) :: mmax, in_nside!, nmaps, nbins
             INTEGER(i8b) :: in_npix
 
-            REAL(sp)     :: t1, t2!, higher, lower
+            REAL(sp)     :: t1, t2, wt1, wt2!, higher, lower
 
 !##            CHARACTER(LEN=1) :: choice
             CHARACTER(LEN=2) :: io_j
@@ -486,6 +486,7 @@
 
 !## -------------------------------------------------------------------
             CALL CPU_TIME(t1)
+            wt1 = SECNDS(0.0)
 
 !## ------ Only two parameters set internally
             ordering = 1 ! 1:RING, 2:NEST
@@ -713,8 +714,10 @@
               ENDIF need_required
 
               CALL CPU_TIME(t2)
+              wt2 = SECNDS(wt1)
 
-              WRITE(*,*) "elapsed time: ", INT((t2-t1)/60),"min", MOD((t2-t1),60.),"sec"
+              WRITE(*,*) "elapsed time: ", INT((wt2)/60),"min", MOD((wt2),60.),"sec"
+              WRITE(*,*) "computing time: ", INT((t2-t1)/60),"min", MOD((t2-t1),60.),"sec"
 
 ! ------ deallocating variables
               DEALLOCATE( dof, jflag, bl2 )
@@ -747,7 +750,7 @@
 !              REAL(dp), DIMENSION(0:npix-1,1:p)          :: temp_map
 !              REAL(dp), DIMENSION(0:mapnpix-1,1:nmap)    :: w5map
               REAL(dp), DIMENSION(:,:), ALLOCATABLE      :: w5map, w8r
-              REAL(sp)                                   :: t1, t2
+              REAL(sp)                                   :: t1, t2, wt1, wt2
 
               COMPLEX(dp), ALLOCATABLE, DIMENSION(:,:,:) :: temp_alm
 
@@ -758,6 +761,7 @@
 !## Apr 2014              logical :: speak = .true.
 
               CALL CPU_TIME(t1)
+              wt1 = SECNDS(0.0)
 
               ordering = 1 ! 1:RING, 2:NEST
 !##              iter = 3 ! number of iteration for map2alm_iterative
@@ -1015,8 +1019,10 @@
               if (mask_applied) deallocate(multipoles_fit, mask)
 
               CALL CPU_TIME(t2)
+              wt2 = SECNDS(wt1)
 
-              WRITE(*,*) "elapsed time: ", INT((t2-t1)/60),"min", MOD((t2-t1),60.),"sec"
+              WRITE(*,*) "elapsed time: ", INT((wt2)/60),"min", MOD((wt2),60.),"sec"
+              WRITE(*,*) "computing time: ", INT((t2-t1)/60),"min", MOD((t2-t1),60.),"sec"
               
               return
 
