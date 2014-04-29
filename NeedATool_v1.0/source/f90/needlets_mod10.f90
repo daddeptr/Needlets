@@ -526,6 +526,7 @@
                      WRITE(*,*) "    map nmap:  ", nmap
                      if (nmap > 1) then
                         write(*,*) "Found more than one field. Currently SCALR field only."
+                        nmap = 1
                      endif
                      print*, ""
                      WRITE(*,*) "    mask:      ", mask_applied
@@ -601,8 +602,8 @@
 
                  mmax = lmax                 
                  ALLOCATE( alm(1:p,0:lmax,0:mmax) )
-                 IF (.NOT. mask_applied) CALL map2alm_iterative(mapnside, lmax, mmax, iter, w5map(:,1), alm, w8ring=w8r)
-                 IF (mask_applied) CALL map2alm_iterative(mapnside, lmax, mmax, iter, w5map(:,1), alm, w8ring=w8r, mask=mask)
+                 IF (.NOT. mask_applied) CALL map2alm_iterative(mapnside, lmax, mmax, iter, w5map(:,1:1), alm, w8ring=w8r)
+                 IF (mask_applied) CALL map2alm_iterative(mapnside, lmax, mmax, iter, w5map(:,1:1), alm, w8ring=w8r, mask=mask)
 
 ! ------ Correcting for the pwf
 ! more precise the reconstruction if not used
